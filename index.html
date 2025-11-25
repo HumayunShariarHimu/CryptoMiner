@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CryptoMiner</title>
+<style>
+    body {
+        font-family: 'Courier New', monospace;
+        background: #0f0f18;
+        color: #00ffea;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+    .miner-ui {
+        width: 65%;
+        text-align: center;
+        min-width: 300px;
+    }
+    h1 {
+        color: #ff00ff;
+        font-size: 2.2em;
+        margin-bottom: 10px;
+        text-shadow: 0 0 10px #ff00ff, 0 0 20px #00ffff;
+    }
+    h2 {
+        color: #00ffff;
+        font-size: 1em;
+        margin-bottom: 20px;
+    }
+    input, button {
+        padding: 12px;
+        margin: 5px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: none;
+        outline: none;
+        box-shadow: 0 0 10px #00ffea;
+        background: #12121f;
+        color: #00ffea;
+        width: 90%;
+        max-width: 300px;
+    }
+    input::placeholder {
+        color: #00ffea;
+    }
+    button {
+        background: #ff00ff;
+        color: #0f0f18;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 0 20px #ff00ff;
+        transition: 0.3s;
+    }
+    button:hover {
+        box-shadow: 0 0 40px #00ffff;
+    }
+    .log {
+        background: #12121f;
+        margin-top: 20px;
+        padding: 15px;
+        height: 300px;
+        overflow-y: auto;
+        border-radius: 10px;
+        text-align: left;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        box-shadow: 0 0 20px #00ffea inset;
+    }
+    .credit {
+        margin-top: 20px;
+        color: #ff00ff;
+        font-size: 14px;
+        text-shadow: 0 0 5px #ff00ff;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 30%;
+        position: relative;
+        min-width: 280px;
+        margin-top: 20px;
+    }
+    .info-btn {
+        background: #00ffff;
+        color: #0f0f18;
+        font-weight: bold;
+        padding: 10px 15px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 0 20px #00ffff;
+        transition: 0.3s;
+    }
+    .info-btn:hover {
+        box-shadow: 0 0 40px #ff00ff;
+    }
+    .code-box {
+        display: none;
+        background: #12121f;
+        border-radius: 10px;
+        padding: 15px;
+        color: #00ffea;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        height: 400px;
+        overflow-y: auto;
+        box-shadow: 0 0 20px #00ffea inset;
+        margin-top: 10px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        body {
+            flex-direction: column;
+            padding: 10px;
+        }
+        .miner-ui, .sidebar {
+            width: 100%;
+        }
+        .code-box {
+            height: 300px;
+            font-size: 11px;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div class="miner-ui">
+    <h1>CryptoMiner</h1>
+    <h2>Crypto Mining Simulation</h2>
+
+    <div>
+        <input type="text" id="wallet" placeholder="Enter Monero Wallet Address">
+    </div>
+    <div>
+        <input type="number" id="threads" placeholder="CPU Threads">
+    </div>
+    <div>
+        <button id="startBtn">Start Miner</button>
+    </div>
+
+    <div class="log" id="log"></div>
+    <div class="credit"> Humayun Shariar Himu</div>
+</div>
+
+<div class="sidebar">
+    <button class="info-btn" id="showCodeBtn">RunPython</button>
+    <div class="code-box" id="codeBox">
+<pre>
+import os
+import subprocess
+import threading
+import time
+import re
+import sys
+
+NAME = "XMR MINER"
+
+def get_max_threads():
+    try:
+        output = subprocess.check_output("lscpu | grep 'Thread(s) per core'", shell=True, text=True)
+        threads_per_core = int(output.split(":")[1].strip())  
+        physical_cores = os.cpu_count() // threads_per_core  
+        total_threads = physical_cores * threads_per_core  
+        return physical_cores, total_threads  
+    except Exception:
+        return os.cpu_count(), os.cpu_count()  
+
+PHYSICAL_CORES, TOTAL_THREADS = get_max_threads()
+
+def install_dependencies():
+    print("\n🚀 Installing Required Packages...\n")
+    subprocess.run("sudo apt update && sudo apt install -y xmrig > /dev/null 2>&1", shell=True)
+    subprocess.run("pip install requests > /dev/null 2>&1", shell=True)
+    print("\n✅ All Dependencies Installed!\n")
+
+install_dependencies()
+
+print(f"\n{'='*50}")
+print(f"🔥 WELCOME TO {NAME} 🔥")
+print(f"{'='*50}\n")
+
+WALLET = input("📌 Enter Your Monero Wallet Address: ").strip()
+
+while True:
+    try:
+        CPU_CORES = int(input(f"⚙️ Enter CPU Threads (Physical: {PHYSICAL_CORES}, Virtual: {TOTAL_THREADS}): ").strip())
+        if 1 <= CPU_CORES <= TOTAL_THREADS:
+            break
+        else:
+            print(f"❌ Invalid Input! Please enter a number between 1 and {TOTAL_THREADS}")
+    except ValueError:
+        print("❌ Invalid Input! Please enter a valid number.")
+
+POOL = "pool.supportxmr.com:3333"
+
+def start_miner():
+    try:
+        xmrig_cmd = f"xmrig -o {POOL} -u {WALLET} -p x -t {CPU_CORES} --donate-level=0 --randomx-mode=fast --cpu-priority=5 --av=2"
+        return subprocess.Popen(xmrig_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    except Exception as e:
+        print(f"❌ {NAME} Start Failed: {e}")
+        return None
+
+def display_status(miner_process):
+    while True:
+        if miner_process.poll() is not None:
+            print(f"\n❌ {NAME} Stopped Unexpectedly!\n")
+            break
+
+        output = miner_process.stdout.readline()
+        if output:
+            output = output.strip()
+            
+            hash_match = re.search(r"(\d+\.?\d*)\s*H/s", output)
+            if hash_match:
+                real_hashrate = float(hash_match.group(1))
+                print(f"💠 {NAME} Hash Rate: {real_hashrate} H/s | Using {CPU_CORES} Threads (Physical + Virtual)")
+
+            shares_match = re.search(r"accepted: (\d+)/(\d+)", output)
+            if shares_match:
+                valid_shares = shares_match.group(1)
+                total_shares = shares_match.group(2)
+                print(f"✅ {NAME} Shares: {valid_shares}/{total_shares}")
+
+        time.sleep(2)
+
+if __name__ == "__main__":
+    print(f"\n🚀 Starting {NAME} with {CPU_CORES} Threads (Physical: {PHYSICAL_CORES}, Virtual: {TOTAL_THREADS})...\n")
+    miner_process = start_miner()
+
+    if miner_process:
+        stats_thread = threading.Thread(target=display_status, args=(miner_process,), daemon=True)
+        stats_thread.start()
+
+        try:
+            miner_process.wait()
+        except KeyboardInterrupt:
+            print(f"\n❌ {NAME} Stopped by User")
+            miner_process.terminate()
+</pre>
+    </div>
+</div>
+
+<script>
+const logDiv = document.getElementById('log');
+const startBtn = document.getElementById('startBtn');
+const showCodeBtn = document.getElementById('showCodeBtn');
+const codeBox = document.getElementById('codeBox');
+
+let minerInterval;
+
+function log(message) {
+    logDiv.innerHTML += message + "<br>";
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function getMaxThreads() {
+    const physicalCores = navigator.hardwareConcurrency || 4;
+    const totalThreads = physicalCores;
+    return { physicalCores, totalThreads };
+}
+
+function startMiner(wallet, cpuThreads) {
+    const { physicalCores, totalThreads } = getMaxThreads();
+    log(`🚀 Starting CryptoMiner with ${cpuThreads} Threads (Physical: ${physicalCores}, Virtual: ${totalThreads})`);
+    log(`Wallet: ${wallet}`);
+    
+    let sharesAccepted = 0;
+    let sharesTotal = 0;
+    
+    minerInterval = setInterval(() => {
+        const baseRate = 100 + Math.random() * 400;
+        const hashRate = (baseRate * cpuThreads / totalThreads).toFixed(2);
+        log(`💠 Hash Rate: ${hashRate} H/s | Threads: ${cpuThreads}`);
+        
+        sharesTotal++;
+        if (Math.random() > 0.25) sharesAccepted++;
+        log(`✅ Shares: ${sharesAccepted}/${sharesTotal}`);
+        
+        if (Math.random() < 0.01) {
+            log(`❌ CryptoMiner Stopped Unexpectedly!`);
+            clearInterval(minerInterval);
+        }
+    }, 2000);
+}
+
+startBtn.addEventListener('click', () => {
+    const wallet = document.getElementById('wallet').value.trim();
+    const threads = parseInt(document.getElementById('threads').value.trim());
+    const { totalThreads } = getMaxThreads();
+
+    if (!wallet) {
+        alert("❌ Enter a wallet address!");
+        return;
+    }
+    if (isNaN(threads) || threads < 1 || threads > totalThreads) {
+        alert(`❌ Enter CPU threads between 1 and ${totalThreads}`);
+        return;
+    }
+
+    if (minerInterval) clearInterval(minerInterval);
+    startMiner(wallet, threads);
+});
+
+// Show/hide code box
+showCodeBtn.addEventListener('click', () => {
+    if (codeBox.style.display === 'none' || codeBox.style.display === '') {
+        codeBox.style.display = 'block';
+        showCodeBtn.textContent = "💡 Hide Python Code";
+    } else {
+        codeBox.style.display = 'none';
+        showCodeBtn.textContent = "💡 Show Python Code";
+    }
+});
+</script>
+
+</body>
+</html>
